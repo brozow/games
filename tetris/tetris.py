@@ -1,6 +1,57 @@
 # INTIALISATION
 import pygame, math, sys
 from pygame.locals import *
+
+class Block:
+    """tile = pygame.image.load('tile.png')"""
+    """A block class"""
+    x = 0
+    y = 0
+    orientation = 0
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def moveLeft(self):
+        self.x = self.x -1
+
+    def moveRight(self):
+        self.x = self.x +1
+
+    def moveDown(self):
+        self.y = self.y +1
+
+    def drop(self):
+        self.y = 20
+
+    def rotateRight(self):
+        self.orientation = (self.orientation + 1) % 4
+
+    def rotateLeft(self):
+        self.orientation = (self.orientation - 1) % 4 
+
+    def draw(self, screen):
+        raise NotImplementedError("Please Implement Draw Function")
+
+    def checkPosition(self):
+        raise NotImplementedError("Please Implement checkPosition")
+        
+class OBlock(Block):
+    #def __init__ (self, x, y):
+     #   super(OBlock, self).__init__(x,y)
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, (255,0,0), Rect((50,50), (60,60)))
+
+#"""the O"""
+#"""the I"""
+#"""the J"""
+#"""the L"""
+#"""the T"""
+#"""the S"""
+#"""the Z"""
+
+oblock = OBlock(0,0)
 screen = pygame.display.set_mode((1024, 768))
 car = pygame.image.load('car.png')
 clock = pygame.time.Clock()
@@ -46,4 +97,5 @@ while 1:
     rect.center = position
     # .. render the car to screen
     screen.blit(rotated, rect)
+    oblock.draw(screen)
     pygame.display.flip()
