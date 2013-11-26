@@ -1,4 +1,4 @@
-# INTIALISATION
+# INTIALIZATION
 import pygame, math, sys
 from pygame.locals import *
 
@@ -12,13 +12,15 @@ MAGENTA = (255,0,255)
 BLACK = (0,0,0)
 WHITE = (255,255,255)
 
+BLOCK_SIZE = 30
+
 class Figure(object):
-    """tile = pygame.image.load('tile.png')"""
-    """A block class"""
+    board = None
     x = 0
     y = 0
     orientation = 0
-    def __init__(self, x, y):
+    def __init__(self, board, x, y):
+        self.board = board
         self.x = x
         self.y = y
 
@@ -51,71 +53,113 @@ class Piece(Figure):
     """A square that makes up a block"""
     color = (255,0,0)
     
-    def __init__(self, x, y, color):
-        super(Piece, self).__init__(x,y)
+    def __init__(self, board, x, y, color):
+        super(Piece, self).__init__(board, x,y)
         self.color = color
 
     def draw(self, screen):
-        pygame.draw.rect(screen, self.color, Rect((self.x*30, self.y*30), (30,30)))
-        pygame.draw.rect(screen, WHITE, Rect((self.x*30, self.y*30), (30,30)), 1)
+        offsetX = self.board.getX()
+        offsetY = self.board.getY()
+        r = Rect((offsetX+self.x*BLOCK_SIZE, offsetY+self.y*BLOCK_SIZE), (BLOCK_SIZE, BLOCK_SIZE))
+        pygame.draw.rect(screen, self.color, r)
+        pygame.draw.rect(screen, WHITE, r, 1)
 
 class Block(Figure):
     
-    def __init__(self, x, y, pieces):
-        super(Block, self).__init__(x,y)
-        self.pieces = pieces;
+    def __init__(self, board, x, y, pieces):
+        super(Block, self).__init__(board,x,y)
+        self.pieces = pieces
+
+    def getPieces(self):
+        return self.pieces
 
     def draw(self, screen):
         for piece in self.pieces:
             piece.draw(screen)
 
-        
+
 #"""the O"""
 class OBlock(Block):
-    def __init__(self, x, y):
-        super(OBlock, self).__init__(x,y,[Piece(x,y,YELLOW), Piece(x+1,y,YELLOW), Piece(x,y+1,YELLOW), Piece(x+1,y+1,YELLOW)])
+    def __init__(self, board, x, y):
+        super(OBlock, self).__init__(board,x,y,[Piece(board,x,y,YELLOW), Piece(board,x+1,y,YELLOW), Piece(board,x,y+1,YELLOW), Piece(board,x+1,y+1,YELLOW)])
     
 
 #"""the I"""
 class IBlock(Block):
-    def __init__ (self, x, y):
-        super(IBlock, self).__init__(x,y,[Piece(x,y,CYAN), Piece(x+1,y,CYAN), Piece(x+2,y,CYAN), Piece(x+3,y,CYAN)])
+    def __init__ (self, board, x, y):
+        super(IBlock, self).__init__(board,x,y,[Piece(board,x,y,CYAN), Piece(board,x+1,y,CYAN), Piece(board,x+2,y,CYAN), Piece(board,x+3,y,CYAN)])
 
 #"""the J"""
 class JBlock(Block):
-    def __init__ (self, x, y):
-        super(JBlock, self).__init__(x,y,[Piece(x,y,BLUE), Piece(x+1,y,BLUE), Piece(x+2,y,BLUE), Piece(x+2,y+1,BLUE)])
+    def __init__ (self, board, x, y):
+        super(JBlock, self).__init__(board,x,y,[Piece(board,x,y,BLUE), Piece(board,x+1,y,BLUE), Piece(board,x+2,y,BLUE), Piece(board,x+2,y+1,BLUE)])
 
 #"""the L"""
 class LBlock(Block):
-    def __init__ (self, x, y):
-        super(LBlock, self).__init__(x,y,[Piece(x,y,ORANGE), Piece(x+1,y,ORANGE), Piece(x+2,y,ORANGE), Piece(x,y+1,ORANGE)])
+    def __init__ (self, board, x, y):
+        super(LBlock, self).__init__(board,x,y,[Piece(board,x,y,ORANGE), Piece(board,x+1,y,ORANGE), Piece(board,x+2,y,ORANGE), Piece(board,x,y+1,ORANGE)])
 
 #"""the T"""
 class TBlock(Block):
-    def __init__ (self, x, y):
-        super(TBlock, self).__init__(x,y,[Piece(x,y,MAGENTA), Piece(x+1,y,MAGENTA), Piece(x+2,y,MAGENTA), Piece(x+1,y+1,MAGENTA)])
+    def __init__ (self, board, x, y):
+        super(TBlock, self).__init__(board,x,y,[Piece(board,x,y,MAGENTA), Piece(board,x+1,y,MAGENTA), Piece(board,x+2,y,MAGENTA), Piece(board,x+1,y+1,MAGENTA)])
 
 #"""the S"""
 class SBlock(Block):
-    def __init__ (self, x, y):
-        super(SBlock, self).__init__(x,y,[Piece(x,y+1,GREEN), Piece(x+1,y+1,GREEN), Piece(x+1,y,GREEN), Piece(x+2,y,GREEN)])
+    def __init__ (self, board, x, y):
+        super(SBlock, self).__init__(board,x,y,[Piece(board,x,y+1,GREEN), Piece(board,x+1,y+1,GREEN), Piece(board,x+1,y,GREEN), Piece(board,x+2,y,GREEN)])
  
 #"""the Z"""
 class ZBlock(Block):
-    def __init__ (self, x, y):
-        super(ZBlock, self).__init__(x,y,[Piece(x,y,RED), Piece(x+1,y,RED), Piece(x+1,y+1,RED), Piece(x+2,y+1,RED)])
-    
+    def __init__ (self, board, x, y):
+        super(ZBlock, self).__init__(board,x,y,[Piece(board,x,y,RED), Piece(board,x+1,y,RED), Piece(board,x+1,y+1,RED), Piece(board,x+2,y+1,RED)])
 
-oblock = OBlock(0,0)
-iblock = IBlock(2,2)
-jblock = JBlock(6,3)
-lblock = LBlock(9,5)
-tblock = TBlock(12,6)
-sblock = SBlock(15,6)
-zblock = ZBlock(18,7)
+class TetrisBoard:
+    x = 0
+    y = 0
+    width = BLOCK_SIZE*10
+    height = BLOCK_SIZE*20
+    pieces = []
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def getX(self):
+        return self.x
+
+    def getY(self):
+        return self.y
+
+    def getWidth(self):
+        return self.width
+
+    def getHeight(self):
+        return self.height
+    
+    def draw(self, screen):
+        r = Rect((self.x, self.y),(self.width, self.height))
+        pygame.draw.rect(screen, WHITE, r, 1)
+        
+        for piece in self.pieces:
+            piece.draw(screen)
+
+    def addPieces(self, pieces):
+        self.pieces = self.pieces + pieces
+    
+board = TetrisBoard((1024-300)/2, (786-600)/2)
+oblock = OBlock(board, 0,0)
+iblock = IBlock(board, 2,2)
+jblock = JBlock(board, 6,3)
+lblock = LBlock(board, 9,5)
+tblock = TBlock(board, 12,6)
+sblock = SBlock(board, 15,6)
+zblock = ZBlock(board, 18,7)
+doneBlock = IBlock(board, 3,19)
+board.addPieces(doneBlock.getPieces())
+doneBlock = LBlock(board, 4, 17)
+board.addPieces(doneBlock.getPieces())
 screen = pygame.display.set_mode((1024, 768))
-car = pygame.image.load('car.png')
+#car = pygame.image.load('car.png')
 clock = pygame.time.Clock()
 k_up = k_down = k_left = k_right = 0
 speed = direction = 0
@@ -153,12 +197,13 @@ while 1:
 
     # RENDERING
     # .. rotate the car image for direction
-    rotated = pygame.transform.rotate(car, direction)
+ #   rotated = pygame.transform.rotate(car, direction)
     # .. position the car on screen
-    rect = rotated.get_rect()
-    rect.center = position
+ #   rect = rotated.get_rect()
+ #   rect.center = position
     # .. render the car to screen
-    screen.blit(rotated, rect)
+ #   screen.blit(rotated, rect)
+    board.draw(screen)
     oblock.draw(screen)
     iblock.draw(screen)
     jblock.draw(screen)
