@@ -34,7 +34,7 @@ class Figure(object):
         self.y = self.y +1
 
     def drop(self):
-        self.y = 20
+        self.y = 19
 
     def rotateRight(self):
         self.orientation = (self.orientation + 1) % 4
@@ -70,8 +70,41 @@ class Block(Figure):
         super(Block, self).__init__(board,x,y)
         self.pieces = pieces
 
+    def bounds(self):
+        raise NotImplementedError("Please Implement checkPosition")        
+
     def getPieces(self):
         return self.pieces
+
+    def moveLeft(self):
+        b = self.bounds()
+        if b.left == 0:
+            return
+        super(Block, self).moveLeft()
+        for piece in self.pieces:
+            piece.moveLeft()
+
+    def moveRight(self):
+        b = self.bounds()
+        if b.right == 10:
+            return
+        super(Block, self).moveRight()
+        for piece in self.pieces:
+            piece.moveRight()
+
+    def moveDown(self):
+        b = self.bounds()
+        if b.bottom == 20:
+            return
+        super(Block, self).moveDown()
+        for piece in self.pieces:
+            piece.moveDown()
+
+    def drop(self):
+        b = self.bounds()
+        while b.bottom < 20:
+            self.moveDown()
+            b = self.bounds()
 
     def draw(self, screen):
         for piece in self.pieces:
@@ -82,7 +115,11 @@ class Block(Figure):
 class OBlock(Block):
     def __init__(self, board, x, y):
         super(OBlock, self).__init__(board,x,y,[Piece(board,x,y,YELLOW), Piece(board,x+1,y,YELLOW), Piece(board,x,y+1,YELLOW), Piece(board,x+1,y+1,YELLOW)])
-    
+
+    def bounds(self):
+        r = Rect((self.x,self.y),(2,2))
+        #print r, r.top, r.left, r.right, r.bottom
+        return r
 
 #"""the I"""
 class IBlock(Block):
@@ -147,17 +184,10 @@ class TetrisBoard:
         self.pieces = self.pieces + pieces
     
 board = TetrisBoard((1024-300)/2, (786-600)/2)
-oblock = OBlock(board, 0,0)
-iblock = IBlock(board, 2,2)
-jblock = JBlock(board, 6,3)
-lblock = LBlock(board, 9,5)
-tblock = TBlock(board, 12,6)
-sblock = SBlock(board, 15,6)
-zblock = ZBlock(board, 18,7)
+block = OBlock(board, 4,0)
 doneBlock = IBlock(board, 3,19)
 board.addPieces(doneBlock.getPieces())
-doneBlock = LBlock(board, 4, 17)
-board.addPieces(doneBlock.getPieces())
+
 screen = pygame.display.set_mode((1024, 768))
 #car = pygame.image.load('car.png')
 clock = pygame.time.Clock()
@@ -175,11 +205,12 @@ while 1:
     for event in pygame.event.get():
         if not hasattr(event, 'key'): continue
         down = event.type == KEYDOWN # key down or up?
-        if event.key == K_RIGHT: k_right = down * -TURN_SPEED
-        elif event.key == K_LEFT: k_left = down * TURN_SPEED
-        elif event.key == K_UP: k_up = down * ACCELERATION
-        elif event.key == K_DOWN: k_down = down * -ACCELERATION
-        elif event.key == K_ESCAPE: sys.exit(0) # quit the game
+        if down and event.key == K_RIGHT: block.moveRight()
+        elif down and event.key == K_LEFT: block.moveLeft()
+        elif down and event.key == K_UP: block.rotateLeft()
+        elif down and event.key == K_DOWN: block.rotateRight()
+        elif down and event.key == K_SPACE: block.drop()
+        elif down and event.key == K_ESCAPE: sys.exit(0) # quit the game
     screen.fill(BLACK)
 
     # SIMULATION
@@ -204,11 +235,6 @@ while 1:
     # .. render the car to screen
  #   screen.blit(rotated, rect)
     board.draw(screen)
-    oblock.draw(screen)
-    iblock.draw(screen)
-    jblock.draw(screen)
-    lblock.draw(screen)
-    tblock.draw(screen)
-    sblock.draw(screen)
-    zblock.draw(screen)
+    block.draw(screen)
+
     pygame.display.flip()
