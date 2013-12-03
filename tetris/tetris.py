@@ -16,8 +16,16 @@ BLOCK_SIZE = 30
 
 class Figure(object):
     board = None
+    """ x and y are 'grid coordinates'"""
+    """ upper left corner is 0,0 """
+    """ board is 10 wide ( x direction ) """
+    """ and 20 high ( y direction ) """
     x = 0
     y = 0
+    """ 0 is initial position """
+    """ 1 is rotated clockwise from initial position 90 degrees """
+    """ 2 is rotated clockwise 180 degrees """
+    """ 3 is rotated clockwise 270 degrees """
     orientation = 0
     def __init__(self, board, x, y):
         self.board = board
@@ -71,7 +79,7 @@ class Block(Figure):
         self.pieces = pieces
 
     def bounds(self):
-        raise NotImplementedError("Please Implement checkPosition")        
+        raise NotImplementedError("Please Implement bounds")        
 
     def getPieces(self):
         return self.pieces
@@ -126,30 +134,77 @@ class IBlock(Block):
     def __init__ (self, board, x, y):
         super(IBlock, self).__init__(board,x,y,[Piece(board,x,y,CYAN), Piece(board,x+1,y,CYAN), Piece(board,x+2,y,CYAN), Piece(board,x+3,y,CYAN)])
 
+    def bounds(self):
+        if self.orientation == 0 or self.orientation == 2:
+            r = Rect((self.x, self.y), (4,1))
+        else:
+            r = Rect((self.x, self.y), (1,4))
+        return r
+        
+            
 #"""the J"""
 class JBlock(Block):
     def __init__ (self, board, x, y):
         super(JBlock, self).__init__(board,x,y,[Piece(board,x,y,BLUE), Piece(board,x+1,y,BLUE), Piece(board,x+2,y,BLUE), Piece(board,x+2,y+1,BLUE)])
 
+    def bounds(self):
+        if self.orientation == 0 or self.orientation == 2:
+            r = Rect((self.x, self.y), (3,2))
+        else:
+            r = Rect((self.x, self.y), (2,3))
+        return r
+        
 #"""the L"""
 class LBlock(Block):
     def __init__ (self, board, x, y):
         super(LBlock, self).__init__(board,x,y,[Piece(board,x,y,ORANGE), Piece(board,x+1,y,ORANGE), Piece(board,x+2,y,ORANGE), Piece(board,x,y+1,ORANGE)])
+
+
+    def bounds(self):
+        if self.orientation == 0 or self.orientation == 2:
+            r = Rect((self.x, self.y), (3,2))
+        else:
+            r = Rect((self.x, self.y), (2,3))
+        return r
 
 #"""the T"""
 class TBlock(Block):
     def __init__ (self, board, x, y):
         super(TBlock, self).__init__(board,x,y,[Piece(board,x,y,MAGENTA), Piece(board,x+1,y,MAGENTA), Piece(board,x+2,y,MAGENTA), Piece(board,x+1,y+1,MAGENTA)])
 
+
+    def bounds(self):
+        if self.orientation == 0 or self.orientation == 2:
+            r = Rect((self.x, self.y), (3,2))
+        else:
+            r = Rect((self.x, self.y), (2,3))
+        return r
+
 #"""the S"""
 class SBlock(Block):
     def __init__ (self, board, x, y):
         super(SBlock, self).__init__(board,x,y,[Piece(board,x,y+1,GREEN), Piece(board,x+1,y+1,GREEN), Piece(board,x+1,y,GREEN), Piece(board,x+2,y,GREEN)])
  
+
+    def bounds(self):
+        if self.orientation == 0 or self.orientation == 2:
+            r = Rect((self.x, self.y), (3,2))
+        else:
+            r = Rect((self.x, self.y), (2,3))
+        return r
+
 #"""the Z"""
 class ZBlock(Block):
     def __init__ (self, board, x, y):
         super(ZBlock, self).__init__(board,x,y,[Piece(board,x,y,RED), Piece(board,x+1,y,RED), Piece(board,x+1,y+1,RED), Piece(board,x+2,y+1,RED)])
+
+
+    def bounds(self):
+        if self.orientation == 0 or self.orientation == 2:
+            r = Rect((self.x, self.y), (3,2))
+        else:
+            r = Rect((self.x, self.y), (2,3))
+        return r
 
 class TetrisBoard:
     x = 0
@@ -184,7 +239,7 @@ class TetrisBoard:
         self.pieces = self.pieces + pieces
     
 board = TetrisBoard((1024-300)/2, (786-600)/2)
-block = OBlock(board, 4,0)
+block = IBlock(board, 3,0)
 doneBlock = IBlock(board, 3,19)
 board.addPieces(doneBlock.getPieces())
 
@@ -211,6 +266,13 @@ while 1:
         elif down and event.key == K_DOWN: block.rotateRight()
         elif down and event.key == K_SPACE: block.drop()
         elif down and event.key == K_ESCAPE: sys.exit(0) # quit the game
+        elif down and event.key == K_o: block = OBlock(board, 4, 0)
+        elif down and event.key == K_i: block = IBlock(board, 3, 0)
+        elif down and event.key == K_l: block = LBlock(board, 3, 0)
+        elif down and event.key == K_j: block = JBlock(board, 3, 0)
+        elif down and event.key == K_s: block = SBlock(board, 3, 0)
+        elif down and event.key == K_z: block = ZBlock(board, 3, 0)
+        elif down and event.key == K_t: block = TBlock(board, 3, 0)
     screen.fill(BLACK)
 
     # SIMULATION
