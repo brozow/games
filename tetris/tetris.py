@@ -50,6 +50,9 @@ class Figure(object):
     def rotateLeft(self):
         self.orientation = (self.orientation - 1) % 4 
 
+    def isHorizontal(self):
+        return self.orientation == 0 or self.orientation == 2
+
     def draw(self, screen):
         raise NotImplementedError("Please Implement Draw Function")
 
@@ -64,6 +67,18 @@ class Piece(Figure):
     def __init__(self, board, x, y, color):
         super(Piece, self).__init__(board, x,y)
         self.color = color
+
+    def rotateRightAround(self, x, y):
+        dx = self.x - x
+        dy = self.y - y
+        self.x = x - dy
+        self.y = y + dx
+
+    def rotateLeftAround(self, x, y):
+        dx = self.x - x
+        dy = self.y - y
+        self.x = x + dy
+        self.y = y - dx
 
     def draw(self, screen):
         offsetX = self.board.getX()
@@ -83,6 +98,32 @@ class Block(Figure):
 
     def getPieces(self):
         return self.pieces
+
+    def rotateRightAround(self, pivotX, pivotY):
+        for piece in self.pieces:
+            piece.rotateRightAround(pivotX, pivotY)
+
+        super(Block, self).rotateRight();
+        
+    def rotateLeftAround(self, pivotX, pivotY):
+        for piece in self.pieces:
+            piece.rotateLeftAround(pivotX, pivotY)
+
+        super(Block, self).rotateLeft()
+
+    def rotateRight(self):
+        pivot = self.pivot()
+        if pivot == None:
+            super(Block, self).rotateRight()
+        else:
+            self.rotateRightAround(pivot.x, pivot.y)
+
+    def rotateLeft(self):
+        pivot = self.pivot()
+        if pivot == None:
+            super(Block, self).rotateLeft()
+        else:
+            self.rotateLeftAround(pivot.x, pivot.y)
 
     def moveLeft(self):
         b = self.bounds()
@@ -129,18 +170,24 @@ class OBlock(Block):
         #print r, r.top, r.left, r.right, r.bottom
         return r
 
+    def pivot(self):
+        return None
+
 #"""the I"""
 class IBlock(Block):
     def __init__ (self, board, x, y):
         super(IBlock, self).__init__(board,x,y,[Piece(board,x,y,CYAN), Piece(board,x+1,y,CYAN), Piece(board,x+2,y,CYAN), Piece(board,x+3,y,CYAN)])
 
     def bounds(self):
-        if self.orientation == 0 or self.orientation == 2:
+        if self.isHorizontal():
             r = Rect((self.x, self.y), (4,1))
         else:
             r = Rect((self.x, self.y), (1,4))
         return r
-        
+
+    def pivot(self):
+        return self.pieces[1]
+
             
 #"""the J"""
 class JBlock(Block):
@@ -148,12 +195,15 @@ class JBlock(Block):
         super(JBlock, self).__init__(board,x,y,[Piece(board,x,y,BLUE), Piece(board,x+1,y,BLUE), Piece(board,x+2,y,BLUE), Piece(board,x+2,y+1,BLUE)])
 
     def bounds(self):
-        if self.orientation == 0 or self.orientation == 2:
+        if self.isHorizontal():
             r = Rect((self.x, self.y), (3,2))
         else:
             r = Rect((self.x, self.y), (2,3))
         return r
-        
+
+    def pivot(self):
+        return self.pieces[1]
+
 #"""the L"""
 class LBlock(Block):
     def __init__ (self, board, x, y):
@@ -161,11 +211,14 @@ class LBlock(Block):
 
 
     def bounds(self):
-        if self.orientation == 0 or self.orientation == 2:
+        if self.isHorizontal():
             r = Rect((self.x, self.y), (3,2))
         else:
             r = Rect((self.x, self.y), (2,3))
         return r
+
+    def pivot(self):
+        return self.pieces[1]
 
 #"""the T"""
 class TBlock(Block):
@@ -174,11 +227,14 @@ class TBlock(Block):
 
 
     def bounds(self):
-        if self.orientation == 0 or self.orientation == 2:
+        if self.isHorizontal():
             r = Rect((self.x, self.y), (3,2))
         else:
             r = Rect((self.x, self.y), (2,3))
         return r
+
+    def pivot(self):
+        return self.pieces[1]
 
 #"""the S"""
 class SBlock(Block):
@@ -187,11 +243,14 @@ class SBlock(Block):
  
 
     def bounds(self):
-        if self.orientation == 0 or self.orientation == 2:
+        if self.isHorizontal():
             r = Rect((self.x, self.y), (3,2))
         else:
             r = Rect((self.x, self.y), (2,3))
         return r
+
+    def pivot(self):
+        return self.pieces[2]
 
 #"""the Z"""
 class ZBlock(Block):
@@ -200,11 +259,14 @@ class ZBlock(Block):
 
 
     def bounds(self):
-        if self.orientation == 0 or self.orientation == 2:
+        if self.isHorizontal():
             r = Rect((self.x, self.y), (3,2))
         else:
             r = Rect((self.x, self.y), (2,3))
         return r
+
+    def pivot(self):
+        return self.pieces[1]
 
 class TetrisBoard:
     x = 0
