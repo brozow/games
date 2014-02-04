@@ -188,13 +188,27 @@ class IBlock(Block):
     def pivot(self):
         return self.pieces[1]
 
+    def rotateRight(self):
+        pivot = self.pivot()
+        if self.isHorizontal():
+            self.rotateRightAround(pivot.x, pivot.y)
+        else:
+            self.rotateLeftAround(pivot.x, pivot.y)
+
+    def rotateLeft(self):
+        pivot = self.pivot()
+        if self.isHorizontal():
+            self.rotateRightAround(pivot.x, pivot.y)
+        else:
+            self.rotateLeftAround(pivot.x, pivot.y)        
+
             
 #"""the J"""
 class JBlock(Block):
     def __init__ (self, board, x, y):
         super(JBlock, self).__init__(board,x,y,[Piece(board,x,y,BLUE), Piece(board,x+1,y,BLUE), Piece(board,x+2,y,BLUE), Piece(board,x+2,y+1,BLUE)])
 
-    def bounds(self):
+    def bounds(self):   
         if self.isHorizontal():
             r = Rect((self.x, self.y), (3,2))
         else:
@@ -249,6 +263,20 @@ class SBlock(Block):
             r = Rect((self.x, self.y), (2,3))
         return r
 
+    def rotateRight(self):
+        pivot = self.pivot()
+        if self.isHorizontal():
+            self.rotateLeftAround(pivot.x, pivot.y)
+        else:
+            self.rotateRightAround(pivot.x, pivot.y)
+
+    def rotateLeft(self):
+        pivot = self.pivot()
+        if self.isHorizontal():
+            self.rotateLeftAround(pivot.x, pivot.y)
+        else:
+            self.rotateRightAround(pivot.x, pivot.y)   
+
     def pivot(self):
         return self.pieces[2]
 
@@ -264,6 +292,20 @@ class ZBlock(Block):
         else:
             r = Rect((self.x, self.y), (2,3))
         return r
+
+    def rotateRight(self):
+        pivot = self.pivot()
+        if self.isHorizontal():
+            self.rotateLeftAround(pivot.x, pivot.y)
+        else:
+            self.rotateRightAround(pivot.x, pivot.y)
+
+    def rotateLeft(self):
+        pivot = self.pivot()
+        if self.isHorizontal():
+            self.rotateLeftAround(pivot.x, pivot.y)
+        else:
+            self.rotateRightAround(pivot.x, pivot.y)   
 
     def pivot(self):
         return self.pieces[1]
@@ -289,7 +331,31 @@ class TetrisBoard:
 
     def getHeight(self):
         return self.height
+
+    def moveDown(self, block):
+        block.moveDown()
+        return block
+
+    def moveLeft(self, block):
+        block.moveLeft()
+        return block
+
+    def moveRight(self, block):
+        block.moveRight()
+        return block
     
+    def rotateLeft(self, block):
+        block.rotateLeft()
+        return block
+
+    def rotateRight(self, block):
+        block.rotateRight()
+        return block
+
+    def drop(self, block):
+        block.drop()
+        return block
+
     def draw(self, screen):
         r = Rect((self.x, self.y),(self.width, self.height))
         pygame.draw.rect(screen, WHITE, r, 1)
@@ -316,17 +382,22 @@ ACCELERATION = 2
 MAX_FORWARD_SPEED = 10
 MAX_REVERSE_SPEED = -5
 
+dropCount=0
 while 1:
     # USER INPUT
     clock.tick(30)
+    dropCount+=1
+    if dropCount >= 30:
+        block=board.moveDown(block)
+        dropCount=0
     for event in pygame.event.get():
         if not hasattr(event, 'key'): continue
         down = event.type == KEYDOWN # key down or up?
-        if down and event.key == K_RIGHT: block.moveRight()
-        elif down and event.key == K_LEFT: block.moveLeft()
-        elif down and event.key == K_UP: block.rotateLeft()
-        elif down and event.key == K_DOWN: block.rotateRight()
-        elif down and event.key == K_SPACE: block.drop()
+        if down and event.key == K_RIGHT: block=board.moveRight(block)
+        elif down and event.key == K_LEFT: block=board.moveLeft(block)
+        elif down and event.key == K_UP: block=board.rotateLeft(block)
+        elif down and event.key == K_DOWN: block=board.rotateRight(block)
+        elif down and event.key == K_SPACE: block=board.drop(block)
         elif down and event.key == K_ESCAPE: sys.exit(0) # quit the game
         elif down and event.key == K_o: block = OBlock(board, 4, 0)
         elif down and event.key == K_i: block = IBlock(board, 3, 0)
