@@ -41,8 +41,8 @@ class Figure(object):
     def moveDown(self):
         self.y = self.y +1
 
-    def drop(self):
-        self.y = 19
+    def moveUp(self):
+        self.y = self.y -1
 
     def rotateRight(self):
         self.orientation = (self.orientation + 1) % 4
@@ -125,35 +125,25 @@ class Block(Figure):
         else:
             self.rotateLeftAround(pivot.x, pivot.y)
 
-    def moveLeft(self):
-        b = self.bounds()
-        if b.left == 0:
-            return
+    def moveLeft(self):      
         super(Block, self).moveLeft()
         for piece in self.pieces:
             piece.moveLeft()
 
     def moveRight(self):
-        b = self.bounds()
-        if b.right == 10:
-            return
         super(Block, self).moveRight()
         for piece in self.pieces:
             piece.moveRight()
 
     def moveDown(self):
-        b = self.bounds()
-        if b.bottom == 20:
-            return
         super(Block, self).moveDown()
         for piece in self.pieces:
             piece.moveDown()
 
-    def drop(self):
-        b = self.bounds()
-        while b.bottom < 20:
-            self.moveDown()
-            b = self.bounds()
+    def moveUp(self):
+        super(Block, self).moveUp()
+        for piece in self.pieces:
+            piece.moveUp()
 
     def draw(self, screen):
         for piece in self.pieces:
@@ -334,7 +324,12 @@ class TetrisBoard:
 
     def moveDown(self, block):
         block.moveDown()
-        return block
+        if not self.checkBounds(block) or self.overlaps(block):
+            block.moveUp()
+            self.addPieces(block.getPieces())
+            return self.nextBlock()
+        else:
+            return block
 
     def moveLeft(self, block):
         block.moveLeft()
@@ -353,9 +348,16 @@ class TetrisBoard:
         return block
 
     def drop(self, block):
-        block.drop()
-        return block
+        while self.checkBounds(block):
+            block.moveDown()
+        block.moveUp()
+        self.addPieces(block.getPieces())
+        
+        return self.nextBlock()
 
+    def nextBlock(self):
+        return IBlock(self, 3,0)
+    
     def draw(self, screen):
         r = Rect((self.x, self.y),(self.width, self.height))
         pygame.draw.rect(screen, WHITE, r, 1)
@@ -365,6 +367,21 @@ class TetrisBoard:
 
     def addPieces(self, pieces):
         self.pieces = self.pieces + pieces
+
+    def checkBounds(self, block):
+        for piece in block.getPieces():
+            if piece.x < 0 or piece.x >= 10:
+                return False
+            if piece.y < 0 or piece.y >= 20:
+                return False
+        return True
+
+    def overlaps(self, block):
+        for boardPiece in self.pieces:
+            for blockPiece in block.getPieces():
+                if boardPiece.x == blockPiece.x and boardPiece.y == blockPiece.y:
+                    return True
+        return False
     
 board = TetrisBoard((1024-300)/2, (786-600)/2)
 block = IBlock(board, 3,0)
@@ -383,11 +400,12 @@ MAX_FORWARD_SPEED = 10
 MAX_REVERSE_SPEED = -5
 
 dropCount=0
+DROP_TICKS = 30
 while 1:
     # USER INPUT
     clock.tick(30)
     dropCount+=1
-    if dropCount >= 30:
+    if dropCount >= DROP_TICKS:
         block=board.moveDown(block)
         dropCount=0
     for event in pygame.event.get():
@@ -406,29 +424,10 @@ while 1:
         elif down and event.key == K_s: block = SBlock(board, 3, 0)
         elif down and event.key == K_z: block = ZBlock(board, 3, 0)
         elif down and event.key == K_t: block = TBlock(board, 3, 0)
+        elif down and event.key == K_EQUALS: DROP_TICKS -= 10
+        elif down and event.key == K_MINUS: DROP_TICKS += 10
     screen.fill(BLACK)
 
-    # SIMULATION
-    # .. new speed and direction based on acceleration and turn
-    speed += (k_up + k_down)
-    if speed > MAX_FORWARD_SPEED: speed = MAX_FORWARD_SPEED
-    if speed < MAX_REVERSE_SPEED: speed = MAX_REVERSE_SPEED
-    direction += (k_right + k_left)
-    # .. new position based on current position, speed and direction
-    x, y = position
-    rad = direction * math.pi / 180
-    x += -speed*math.sin(rad)
-    y += -speed*math.cos(rad)
-    position = (x, y)
-
-    # RENDERING
-    # .. rotate the car image for direction
- #   rotated = pygame.transform.rotate(car, direction)
-    # .. position the car on screen
- #   rect = rotated.get_rect()
- #   rect.center = position
-    # .. render the car to screen
- #   screen.blit(rotated, rect)
     board.draw(screen)
     block.draw(screen)
 
