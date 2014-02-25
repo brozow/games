@@ -1,5 +1,5 @@
 # INTIALIZATION
-import pygame, math, sys
+import pygame, math, sys, random
 from pygame.locals import *
 
 RED = (255,0,0)
@@ -81,11 +81,15 @@ class Piece(Figure):
         self.y = y - dx
 
     def draw(self, screen):
+        self.drawAs(screen, self.color)
+        
+    def drawAs(self, screen, color):
         offsetX = self.board.getX()
         offsetY = self.board.getY()
         r = Rect((offsetX+self.x*BLOCK_SIZE, offsetY+self.y*BLOCK_SIZE), (BLOCK_SIZE, BLOCK_SIZE))
-        pygame.draw.rect(screen, self.color, r)
+        pygame.draw.rect(screen, color, r)
         pygame.draw.rect(screen, WHITE, r, 1)
+        
 
 class Block(Figure):
     
@@ -306,6 +310,8 @@ class TetrisBoard:
     width = BLOCK_SIZE*10
     height = BLOCK_SIZE*20
     pieces = []
+    deleting = []
+    flashing = False
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -333,10 +339,14 @@ class TetrisBoard:
 
     def moveLeft(self, block):
         block.moveLeft()
+        if not self.checkBounds(block) or self.overlaps(block):
+            block.moveRight();
         return block
 
     def moveRight(self, block):
         block.moveRight()
+        if not self.checkBounds(block) or self.overlaps(block):
+            block.moveLeft();
         return block
     
     def rotateLeft(self, block):
@@ -348,7 +358,7 @@ class TetrisBoard:
         return block
 
     def drop(self, block):
-        while self.checkBounds(block):
+        while self.checkBounds(block) and not self.overlaps(block):
             block.moveDown()
         block.moveUp()
         self.addPieces(block.getPieces())
@@ -356,17 +366,64 @@ class TetrisBoard:
         return self.nextBlock()
 
     def nextBlock(self):
-        return IBlock(self, 3,0)
+        n = random.randint(1,7)
+        return {
+          1: lambda : IBlock(self, 3, 0),
+          2: lambda : JBlock(self, 3, 0),
+          3: lambda : LBlock(self, 3, 0),
+          4: lambda : SBlock(self, 3, 0),
+          5: lambda : ZBlock(self, 3, 0),
+          6: lambda : TBlock(self, 3, 0),
+          7: lambda : OBlock(self, 3, 0),
+        }[n]()
     
     def draw(self, screen):
         r = Rect((self.x, self.y),(self.width, self.height))
         pygame.draw.rect(screen, WHITE, r, 1)
         
         for piece in self.pieces:
-            piece.draw(screen)
+            if self.flashing and self.deleting.count(piece.y):
+                piece.drawAs(screen, WHITE)
+            else:
+                piece.draw(screen)
+
 
     def addPieces(self, pieces):
         self.pieces = self.pieces + pieces
+        self.findFullRows()
+
+    def getPiecesInRow(self, n):
+        row = []
+        for piece in self.pieces:
+            if piece.y == n:
+                row.append(piece)
+        return row
+
+    def getDeleting(self):
+        return self.deleting
+
+    def removeRow(self, n):
+
+        def f(p): return p.y != n
+
+        self.pieces = filter(f, self.pieces)
+        
+        for piece in self.pieces:
+            if piece.y < n:
+                piece.y = piece.y+1
+
+    def removeDeleted(self):
+        for n in self.deleting:
+            self.removeRow(n)
+
+        self.deleting = []
+
+    def findFullRows(self):
+        for n in range(0, 20):
+            row = self.getPiecesInRow(n)
+            if len(row) == 10:
+                self.deleting.append(n)
+        
 
     def checkBounds(self, block):
         for piece in block.getPieces():
@@ -382,14 +439,14 @@ class TetrisBoard:
                 if boardPiece.x == blockPiece.x and boardPiece.y == blockPiece.y:
                     return True
         return False
-    
-board = TetrisBoard((1024-300)/2, (786-600)/2)
-block = IBlock(board, 3,0)
-doneBlock = IBlock(board, 3,19)
-board.addPieces(doneBlock.getPieces())
+
+width = (1024-300)/2
+height = (768-600)/2
+board = TetrisBoard(width, height)
+block = board.nextBlock()
 
 screen = pygame.display.set_mode((1024, 768))
-#car = pygame.image.load('car.png')
+
 clock = pygame.time.Clock()
 k_up = k_down = k_left = k_right = 0
 speed = direction = 0
@@ -400,10 +457,29 @@ MAX_FORWARD_SPEED = 10
 MAX_REVERSE_SPEED = -5
 
 dropCount=0
+deleteCount=0
 DROP_TICKS = 30
-while 1:
+DELETE_TICKS=5
+DELETE_FLASHED=6
+running = True
+
+while running:
     # USER INPUT
-    clock.tick(30)
+    clock.tick(DROP_TICKS)
+    
+    deleting = board.getDeleting()
+    #print "delete: %s" % deleting
+    if len(deleting)> 0:
+        deleteCount+=1
+
+    if (deleteCount-1) % DELETE_TICKS == 0:
+        board.flashing = not board.flashing
+
+    if (deleteCount-1) // DELETE_TICKS >= DELETE_FLASHED:
+        deleteCount = 0
+        board.removeDeleted()
+        
+        
     dropCount+=1
     if dropCount >= DROP_TICKS:
         block=board.moveDown(block)
@@ -416,7 +492,7 @@ while 1:
         elif down and event.key == K_UP: block=board.rotateLeft(block)
         elif down and event.key == K_DOWN: block=board.rotateRight(block)
         elif down and event.key == K_SPACE: block=board.drop(block)
-        elif down and event.key == K_ESCAPE: sys.exit(0) # quit the game
+        elif down and event.key == K_ESCAPE: running = False
         elif down and event.key == K_o: block = OBlock(board, 4, 0)
         elif down and event.key == K_i: block = IBlock(board, 3, 0)
         elif down and event.key == K_l: block = LBlock(board, 3, 0)
@@ -424,6 +500,9 @@ while 1:
         elif down and event.key == K_s: block = SBlock(board, 3, 0)
         elif down and event.key == K_z: block = ZBlock(board, 3, 0)
         elif down and event.key == K_t: block = TBlock(board, 3, 0)
+        elif down and event.key == K_q:
+            board = TetrisBoard(width, height)
+            block = board.nextBlock()
         elif down and event.key == K_EQUALS: DROP_TICKS -= 10
         elif down and event.key == K_MINUS: DROP_TICKS += 10
     screen.fill(BLACK)
@@ -432,3 +511,5 @@ while 1:
     block.draw(screen)
 
     pygame.display.flip()
+
+pygame.quit()
